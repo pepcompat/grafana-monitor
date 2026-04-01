@@ -1,3 +1,5 @@
+# @format
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -16,15 +18,72 @@ scrape_configs:
   # Remote servers - เพิ่ม IP:port ของ Node Exporter บน server แต่ละตัว
   - job_name: "remote-servers"
     static_configs:
-      - targets: ["192.168.1.10:9100"]
+      # On-Premise
+      - targets: ["192.168.0.12:9100"]
         labels:
-          instance_name: "web-server-01"
-      - targets: ["192.168.1.11:9100"]
+          instance_name: "UAT OnPremise"
+      - targets: ["192.168.0.13:9100"]
         labels:
-          instance_name: "web-server-02"
-      - targets: ["192.168.1.12:9100"]
+          instance_name: "Sandbox OnPremise"
+
+      # DigitalOcean
+      - targets: ["159.65.130.152:9100"]
         labels:
-          instance_name: "db-server-01"
+          instance_name: "UAT"
+      - targets: ["165.232.173.233:9100"]
+        labels:
+          instance_name: "PRODUCTION"
+      - targets: ["152.42.170.243:9100"]
+        labels:
+          instance_name: "CRM Korat"
+      - targets: ["134.209.99.193:9100"]
+        labels:
+          instance_name: "JRK"
+      - targets: ["167.71.196.6:9100"]
+        labels:
+          instance_name: "GALAXLENS"
+      - targets: ["134.209.102.251:9100"]
+        labels:
+          instance_name: "NOTIBOT"
+      - targets: ["178.128.97.86:9100"]
+        labels:
+          instance_name: "MeeDee"
+      - targets: ["157.230.41.92:9100"]
+        labels:
+          instance_name: "Friend Zone UAT"
+      - targets: ["157.245.197.162:9100"]
+        labels:
+          instance_name: "IST MQTT Server"
+      - targets: ["134.209.96.156:9100"]
+        labels:
+          instance_name: "VCF BreederFlow"
+      - targets: ["68.183.183.215:9100"]
+        labels:
+          instance_name: "Sirarom Project"
+      - targets: ["68.183.187.153:9100"]
+        labels:
+          instance_name: "ATC"
+      - targets: ["165.22.97.87:9100"]
+        labels:
+          instance_name: "iSmartTank"
+      - targets: ["139.59.116.97:9100"]
+        labels:
+          instance_name: "Industrack"
+      - targets: ["157.230.40.124:9100"]
+        labels:
+          instance_name: "IDT MQTT Server"
+      - targets: ["139.59.100.23:9100"]
+        labels:
+          instance_name: "seetar.net (QR View)"
+      - targets: ["152.42.201.212:9100"]
+        labels:
+          instance_name: "AbleLink"
+      - targets: ["165.22.50.217:9100"]
+        labels:
+          instance_name: "Pinto"
+      - targets: ["152.42.176.143:9100"]
+        labels:
+          instance_name: "Galaxlens V2"
 
   - job_name: "cadvisor"
     static_configs:
