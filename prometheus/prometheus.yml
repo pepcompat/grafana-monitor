@@ -23,6 +23,9 @@ scrape_configs:
 
   # Remote servers - เพิ่ม IP:port ของ Node Exporter บน server แต่ละตัว
   - job_name: "remote-servers"
+    basic_auth:
+      username: prometheus
+      password: "MonitorSecure2024!"
     relabel_configs:
       - source_labels: [instance_name, __address__]
         separator: ";"

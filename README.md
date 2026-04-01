@@ -1,3 +1,5 @@
+<!-- @format -->
+
 # Monitoring Stack
 
 Grafana + Prometheus monitoring stack with Docker Compose
@@ -22,12 +24,12 @@ Grafana + Prometheus monitoring stack with Docker Compose
  :9100      :8080           :9100
 ```
 
-| Service | Port | Description |
-|---|---|---|
-| Prometheus | 9090 | Metrics collection & query engine |
-| Grafana | 3000 | Dashboard & visualization |
+| Service       | Port | Description                            |
+| ------------- | ---- | -------------------------------------- |
+| Prometheus    | 9090 | Metrics collection & query engine      |
+| Grafana       | 3000 | Dashboard & visualization              |
 | Node Exporter | 9100 | Host metrics (CPU, RAM, Disk, Network) |
-| cAdvisor | 8080 | Container metrics |
+| cAdvisor      | 8080 | Container metrics                      |
 
 ## Quick Start
 
@@ -56,60 +58,38 @@ Password: admin
 
 ### Step 1 - Install Node Exporter on remote server
 
-SSH เข้า server ที่ต้องการ monitor แล้วรัน:
-
-#### Option A: Docker (แนะนำ)
+SSH เข้า server ที่ต้องการ monitor แล้วรัน **install script** (แนะนำ):
 
 ```bash
-docker run -d \
-  --name node-exporter \
-  --restart unless-stopped \
-  --net host \
-  --pid host \
-  -v /proc:/host/proc:ro \
-  -v /sys:/host/sys:ro \
-  -v /:/rootfs:ro \
-  prom/node-exporter:latest \
-  --path.procfs=/host/proc \
-  --path.sysfs=/host/sys \
-  --path.rootfs=/rootfs \
-  --collector.filesystem.mount-points-exclude="^/(sys|proc|dev|host|etc)($$|/)"
+curl -sfL https://raw.githubusercontent.com/<YOUR_REPO>/main/scripts/install-node-exporter.sh | bash
 ```
 
-#### Option B: Docker Compose
-
-สร้างไฟล์ `docker-compose.yml` บน remote server:
-
-```yaml
-services:
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    restart: unless-stopped
-    network_mode: host
-    pid: host
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - "--path.procfs=/host/proc"
-      - "--path.sysfs=/host/sys"
-      - "--path.rootfs=/rootfs"
-      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-```
+หรือ copy script จาก `scripts/install-node-exporter.sh` ไปรันบน server โดยตรง:
 
 ```bash
-docker compose up -d
+scp scripts/install-node-exporter.sh user@<SERVER_IP>:/tmp/
+ssh user@<SERVER_IP> "bash /tmp/install-node-exporter.sh"
 ```
 
-#### Option C: Systemd (without Docker)
+Script จะติดตั้ง Node Exporter v1.10.2 พร้อม Basic Auth อัตโนมัติ
+
+> **Credentials:** `prometheus` / `MonitorSecure2024!`
+
+#### ติดตั้ง Manual (Systemd)
 
 ```bash
 # Download
-wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
-tar xvfz node_exporter-1.8.2.linux-amd64.tar.gz
-sudo mv node_exporter-1.8.2.linux-amd64/node_exporter /usr/local/bin/
+wget https://github.com/prometheus/node_exporter/releases/download/v1.10.2/node_exporter-1.10.2.linux-amd64.tar.gz
+tar xvfz node_exporter-1.10.2.linux-amd64.tar.gz
+sudo mv node_exporter-1.10.2.linux-amd64/node_exporter /usr/local/bin/
+
+# Create Basic Auth config
+sudo mkdir -p /etc/node-exporter
+sudo tee /etc/node-exporter/web.yml > /dev/null <<'EOF'
+basic_auth_users:
+  prometheus: $2y$12$6W6SLbVVW/tQlss5EloNnuQPRCIvTiTBQ0gu170cf2W1KDBJYtX0O
+EOF
+sudo chmod 600 /etc/node-exporter/web.yml
 
 # Create systemd service
 sudo tee /etc/systemd/system/node-exporter.service > /dev/null <<'EOF'
@@ -120,7 +100,7 @@ After=network.target
 [Service]
 Type=simple
 User=nobody
-ExecStart=/usr/local/bin/node_exporter
+ExecStart=/usr/local/bin/node_exporter --web.config.file=/etc/node-exporter/web.yml
 Restart=always
 
 [Install]
@@ -135,7 +115,11 @@ sudo systemctl enable --now node-exporter
 #### Verify installation
 
 ```bash
-curl http://localhost:9100/metrics | head
+# ใส่ credentials → ต้องได้ metrics
+curl -u prometheus:MonitorSecure2024! http://localhost:9100/metrics | head
+
+# ไม่ใส่ credentials → ต้องได้ 401 Unauthorized
+curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics
 ```
 
 ### Step 2 - Open firewall (if needed)
@@ -147,31 +131,23 @@ sudo ufw allow 9100/tcp
 # firewalld
 sudo firewall-cmd --permanent --add-port=9100/tcp
 sudo firewall-cmd --reload
-
-# iptables
-sudo iptables -A INPUT -p tcp --dport 9100 -j ACCEPT
 ```
-
-> **Security Tip:** จำกัด access เฉพาะ IP ของ Prometheus server
-> ```bash
-> sudo ufw allow from <PROMETHEUS_SERVER_IP> to any port 9100
-> ```
 
 ### Step 3 - Add target to Prometheus
 
 แก้ไขไฟล์ `prometheus/prometheus.yml` เพิ่ม target:
 
 ```yaml
-  - job_name: "remote-servers"
-    static_configs:
-      - targets: ["192.168.1.10:9100"]
-        labels:
-          instance_name: "web-server-01"
+- job_name: "remote-servers"
+  static_configs:
+    - targets: ["192.168.1.10:9100"]
+      labels:
+        instance_name: "web-server-01"
 
-      # เพิ่ม server ใหม่ตรงนี้
-      - targets: ["<NEW_SERVER_IP>:9100"]
-        labels:
-          instance_name: "<SERVER_NAME>"
+    # เพิ่ม server ใหม่ตรงนี้
+    - targets: ["<NEW_SERVER_IP>:9100"]
+      labels:
+        instance_name: "<SERVER_NAME>"
 ```
 
 ### Step 4 - Reload Prometheus
@@ -200,11 +176,11 @@ Dashboard **Node Exporter Full** ถูก provision มาให้อัตโ
 1. เปิด Grafana > **Dashboards** > **New** > **Import**
 2. ใส่ Dashboard ID แล้วกด **Load**
 
-| Dashboard | ID | Description |
-|---|---|---|
-| Node Exporter Full | `1860` | Host metrics ครบทุก metric |
-| Docker Container | `893` | Container metrics จาก cAdvisor |
-| Prometheus Stats | `2` | Prometheus self-monitoring |
+| Dashboard          | ID     | Description                    |
+| ------------------ | ------ | ------------------------------ |
+| Node Exporter Full | `1860` | Host metrics ครบทุก metric     |
+| Docker Container   | `893`  | Container metrics จาก cAdvisor |
+| Prometheus Stats   | `2`    | Prometheus self-monitoring     |
 
 ## File Structure
 
@@ -247,4 +223,28 @@ curl -X POST http://localhost:9090/-/reload
 
 # Check Prometheus config syntax
 docker compose exec prometheus promtool check config /etc/prometheus/prometheus.yml
+```
+
+```bash
+wget https://github.com/prometheus/node_exporter/releases/download/v1.10.2/node_exporter-1.10.2.linux-amd64.tar.gz
+tar xvfz node_exporter-1.10.2.linux-amd64.tar.gz
+sudo mv node_exporter-1.10.2.linux-amd64/node_exporter /usr/local/bin/
+
+sudo tee /etc/systemd/system/node-exporter.service > /dev/null <<'EOF'
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+ExecStart=/usr/local/bin/node_exporter
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now node-exporter
 ```
