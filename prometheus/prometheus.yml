@@ -25,6 +25,9 @@ scrape_configs:
       - targets: ["192.168.0.13:9100"]
         labels:
           instance_name: "Sandbox OnPremise"
+      - targets: ["192.168.0.20:9100"]
+        labels:
+          instance_name: "Development OnPremise"
 
       # DigitalOcean
       - targets: ["159.65.130.152:9100"]
