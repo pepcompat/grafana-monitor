@@ -11,7 +11,10 @@ scrape_configs:
 
   - job_name: "node-exporter"
     relabel_configs:
-      - source_labels: [instance_name]
+      - source_labels: [instance_name, __address__]
+        separator: ";"
+        regex: "(.*);(.*):.*"
+        replacement: "$1 ($2)"
         target_label: instance
     static_configs:
       - targets: ["node-exporter:9100"]
@@ -21,7 +24,10 @@ scrape_configs:
   # Remote servers - เพิ่ม IP:port ของ Node Exporter บน server แต่ละตัว
   - job_name: "remote-servers"
     relabel_configs:
-      - source_labels: [instance_name]
+      - source_labels: [instance_name, __address__]
+        separator: ";"
+        regex: "(.*);(.*):.*"
+        replacement: "$1 ($2)"
         target_label: instance
     static_configs:
       # On-Premise
