@@ -61,7 +61,7 @@ Password: admin
 SSH เข้า server ที่ต้องการ monitor แล้วรัน **install script** (แนะนำ):
 
 ```bash
-curl -sfL https://raw.githubusercontent.com/<YOUR_REPO>/main/scripts/install-node-exporter.sh | bash
+curl -sfL https://raw.githubusercontent.com/pepcompat/grafana-monitor/refs/heads/main/scripts/install-node-exporter.sh | bash
 ```
 
 หรือ copy script จาก `scripts/install-node-exporter.sh` ไปรันบน server โดยตรง:

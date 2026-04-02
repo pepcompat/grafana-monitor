@@ -42,6 +42,18 @@ WantedBy=multi-user.target
 EOF
 echo "[OK] Systemd service created"
 
+# Stop existing service (if running)
+if systemctl is-active --quiet node-exporter 2>/dev/null; then
+    echo "[..] Stopping existing Node Exporter..."
+    sudo systemctl stop node-exporter
+fi
+
+# Also remove old docker container (if exists)
+if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^node-exporter$'; then
+    echo "[..] Removing old Docker container..."
+    docker rm -f node-exporter 2>/dev/null || true
+fi
+
 # Enable & start
 sudo systemctl daemon-reload
 sudo systemctl enable --now node-exporter
