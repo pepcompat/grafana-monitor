@@ -22,7 +22,7 @@ sudo tee /etc/node-exporter/web.yml > /dev/null <<EOF
 basic_auth_users:
   ${AUTH_USER}: ${AUTH_HASH}
 EOF
-sudo chmod 600 /etc/node-exporter/web.yml
+sudo chmod 644 /etc/node-exporter/web.yml
 echo "[OK] Basic Auth configured"
 
 # Create systemd service
