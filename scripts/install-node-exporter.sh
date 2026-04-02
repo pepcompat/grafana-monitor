@@ -54,9 +54,10 @@ if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^node-exporter$'; t
     docker rm -f node-exporter 2>/dev/null || true
 fi
 
-# Enable & start
+# Enable & restart
 sudo systemctl daemon-reload
-sudo systemctl enable --now node-exporter
+sudo systemctl enable node-exporter
+sudo systemctl restart node-exporter
 echo "[OK] Node Exporter started"
 
 # Verify
